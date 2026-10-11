@@ -1,0 +1,10 @@
+{
+  "name": "emis-student-exporter",
+  "version": "1.2.0",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "pack": "node scripts/package.js"
+  }
+}

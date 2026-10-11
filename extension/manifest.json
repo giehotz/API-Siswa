@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "EMIS Student Exporter",
+  "version": "1.2.0",
+  "description": "Ekspor data siswa madrasah dari EMIS Kemenag ke format Excel (.xlsx) 1 sheet lengkap secara aman, cepat, dan terstruktur.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://emis.kemenag.go.id/*",
+    "https://api-emis.kemenag.go.id/*",
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*",
+    "http://localhost/*",
+    "https://*/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://emis.kemenag.go.id/*"
+      ],
+      "js": [
+        "scripts/content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "scripts/inpage-sniffer.js"
+      ],
+      "matches": [
+        "https://emis.kemenag.go.id/*"
+      ]
+    }
+  ]
+}

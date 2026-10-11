@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMIS Student Exporter</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">E</div>
+        <div>
+          <h1 class="app-title">EMIS Exporter</h1>
+          <span class="app-subtitle">Kesiswaan Madrasah · v1.1</span>
+        </div>
+      </div>
+      <div id="connectionBadge" class="badge badge-disconnected">
+        <span class="badge-dot"></span>
+        <span id="connectionText">Memeriksa Tab...</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <!-- Status Card -->
+      <section class="card status-card">
+        <div class="card-header">
+          <span class="card-title">Status Deteksi Sesi</span>
+        </div>
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">Form Siswa Aktif:</span>
+            <span id="detailStatus" class="status-val text-muted">Belum Terdeteksi</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Daftar Siswa API:</span>
+            <span id="listStatus" class="status-val text-muted">Belum Terdeteksi</span>
+          </div>
+        </div>
+        <div id="noticeBanner" class="notice-box notice-info">
+          Buka portal <a href="https://emis.kemenag.go.id" target="_blank" class="link">emis.kemenag.go.id</a> untuk memulai deteksi.
+        </div>
+      </section>
+
+      <!-- Privacy Settings -->
+      <section class="card">
+        <div class="card-header">
+          <span class="card-title">Pengaturan Privasi Kolom</span>
+        </div>
+        
+        <div class="switch-row">
+          <div class="switch-info">
+            <span class="switch-label">Sertakan Data Sensitif</span>
+            <span class="switch-desc">NIK, No. KK, Bansos, & Lokasi</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggleSensitiveMaster">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div id="privacyWarning" class="notice-box notice-warning hidden">
+          ⚠️ <strong>Peringatan Privasi:</strong> File Excel akan memuat data pribadi terlindungi (NIK & KK). Pastikan Anda berwenang dan menjaga keamanan dokumen.
+        </div>
+
+        <!-- Granular Accordion -->
+        <details id="granularDetails" class="granular-details hidden">
+          <summary class="granular-summary">Pilihan Kolom Spesifik</summary>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkNik" checked> NIK Siswa
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkKk" checked> No. Kartu Keluarga
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkParentsNik" checked> NIK Orang Tua / Wali
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkBansos" checked> Status Bantuan Sosial (PKH, BPNT, DTKS)
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkCoords"> Titik Koordinat (Lat/Long)
+            </label>
+          </div>
+        </details>
+      </section>
+
+      <!-- SIS Connection Settings -->
+      <section class="card">
+        <details id="sisSettingsDetails" class="granular-details">
+          <summary class="granular-summary">⚙️ Pengaturan Koneksi SIS (Backend)</summary>
+          <div style="margin-top: 10px;">
+            <div class="form-group">
+              <label class="form-label" for="txtSisApiUrl">URL API Backend SIS</label>
+              <input type="url" id="txtSisApiUrl" class="form-input" value="http://127.0.0.1:8000/api/v1" placeholder="http://127.0.0.1:8000/api/v1">
+              <div class="form-hint">Alamat endpoint API SIS Laravel lokal/server madrasah.</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="txtSisToken">Token Sinkronisasi (Sanctum)</label>
+              <input type="password" id="txtSisToken" class="form-input" placeholder="Salin Bearer token dari Admin SIS">
+              <div class="form-hint">Token madrasah yang diterbitkan di panel admin SIS.</div>
+            </div>
+            <div class="btn-group-row" style="margin-top: 8px;">
+              <button id="btnTestSisConnection" class="btn btn-outline btn-sm flex-1" type="button">
+                🔍 Tes Koneksi SIS
+              </button>
+              <button id="btnSaveSisSettings" class="btn btn-secondary btn-sm flex-1" type="button">
+                💾 Simpan
+              </button>
+            </div>
+            <div id="sisStatusNotice" class="notice-box notice-info hidden" style="margin-top: 8px;"></div>
+          </div>
+        </details>
+      </section>
+
+      <!-- Batch Export Section (Single Sheet Mode) -->
+      <section class="card">
+        <div class="card-header">
+          <span class="card-title">Ekspor & Sinkronisasi Siswa</span>
+        </div>
+
+        <div id="cacheNoticeRow" class="cache-notice-row hidden">
+          <span id="cacheNoticeText" class="cache-notice-text">💾 0 siswa tersimpan di memori</span>
+          <button id="btnResetCache" class="btn-link" type="button">Hapus Cache</button>
+        </div>
+
+        <button id="btnMassExport" class="btn btn-primary btn-block" disabled>
+          <span class="btn-icon">📥</span> <span id="btnMassExportText">Mulai Ekspor Semua Siswa (Excel)</span>
+        </button>
+
+        <button id="btnSyncSis" class="btn btn-success btn-block" style="margin-top: 8px;" disabled>
+          <span class="btn-icon">🚀</span> <span id="btnSyncSisText">Kirim ke SIS (Sinkronisasi Otomatis)</span>
+        </button>
+
+        <div id="cachedActionsGroup" class="hidden" style="margin-top: 8px;">
+          <button id="btnDownloadCached" class="btn btn-outline btn-block" type="button">
+            <span>💾 Unduh Data Tersimpan (<span id="cachedCountBadge">0</span> Siswa ke Excel)</span>
+          </button>
+
+          <button id="btnSyncCachedSis" class="btn btn-success btn-block" style="margin-top: 6px;" type="button">
+            <span class="btn-icon">🚀</span> <span>Kirim Data Tersimpan ke SIS (<span id="cachedSyncCountBadge">0</span> Siswa)</span>
+          </button>
+        </div>
+
+        <div id="progressArea" class="progress-area hidden">
+          <div class="progress-bar-bg">
+            <div id="progressBar" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+          <div class="progress-stats">
+            <span id="progressPercent">0%</span>
+            <span id="progressCounts">0 / 0 Siswa</span>
+          </div>
+          <div id="progressStatusMsg" class="progress-message">Menyiapkan...</div>
+          <div class="btn-group-row">
+            <button id="btnCancel" class="btn btn-danger btn-sm btn-block">Batalkan</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Testing & Single Export Section -->
+      <section class="card test-card">
+        <div class="card-header">
+          <span class="card-title">Uji Langsung & Ekspor Tunggal</span>
+        </div>
+        <p class="test-desc">Ekspor 1 siswa dari formulir aktif atau uji coba dengan data sampel:</p>
+        <div class="btn-group-row">
+          <button id="btnExportCurrentTab" class="btn btn-outline flex-1">
+            📄 Ekspor Tab Ini
+          </button>
+          <button id="btnTestMock" class="btn btn-outline flex-1">
+            🧪 Uji Sampel Mock
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>🔒 100% Pemrosesan Lokal · Terintegrasi SIS-EMIS</span>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../vendor/xlsx.full.min.js"></script>
+  <script src="../lib/normalizer.js"></script>
+  <script src="../lib/exporter.js"></script>
+  <script src="../lib/sync-client.js"></script>
+  <script src="../scripts/mock-sample.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -65,9 +65,21 @@
   }
 
   function normalizeApiUrl(url) {
-    let clean = (url || 'http://127.0.0.1:8000/api/v1').trim();
+    let clean = (url || 'https://api.min2tanggamus.sch.id/api/v1').trim();
     if (clean.endsWith('/')) {
       clean = clean.slice(0, -1);
+    }
+    // Otomatis upgrade http:// ke https:// untuk domain publik (mencegah CORS error akibat redirect 301)
+    if (clean.startsWith('http://') && !clean.includes('localhost') && !clean.includes('127.0.0.1')) {
+      clean = clean.replace('http://', 'https://');
+    }
+    // Otomatis tambahkan /api/v1 jika pengguna hanya memasukkan nama domain dasar
+    if (!clean.includes('/api/v1') && !clean.includes('/api/')) {
+      if (clean.endsWith('/api')) {
+        clean = `${clean}/v1`;
+      } else {
+        clean = `${clean}/api/v1`;
+      }
     }
     return clean;
   }

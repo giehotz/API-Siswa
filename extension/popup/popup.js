@@ -62,7 +62,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (chrome.storage && chrome.storage.local) {
     chrome.storage.local.get(['emisPrivacyConfig', 'sis_api_url', 'sis_api_token'], (result) => {
       if (result) {
-        if (result.sis_api_url && txtSisApiUrl) txtSisApiUrl.value = result.sis_api_url;
+        if (result.sis_api_url && txtSisApiUrl) {
+          let savedUrl = result.sis_api_url.trim();
+          // Auto upgrade http ke https untuk domain publik
+          if (savedUrl.startsWith('http://api.min2tanggamus.sch.id')) {
+            savedUrl = savedUrl.replace('http://', 'https://');
+          }
+          txtSisApiUrl.value = savedUrl;
+        } else if (txtSisApiUrl) {
+          txtSisApiUrl.value = 'https://api.min2tanggamus.sch.id/api/v1';
+        }
         if (result.sis_api_token && txtSisToken) txtSisToken.value = result.sis_api_token;
         updateSyncButtonState();
 
@@ -501,14 +510,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const client = new EmisSyncClient({ apiUrl: url, token });
         const res = await client.checkStatus();
         if (res?.success) {
-          const inst = res.data?.institution;
-          const count = res.data?.students_count ?? 0;
+          const inst = res.institution || res.data?.institution;
+          const count = res.students_count ?? res.data?.students_count ?? 0;
           showSisNotice(`Tersambung! Madrasah: ${inst?.name || 'Terverifikasi'} (${count} siswa di SIS)`, 'info');
         } else {
           showSisNotice(res?.message || 'Gagal tersambung ke server SIS.', 'warning');
         }
       } catch (err) {
-        showSisNotice(`Koneksi Gagal: ${err.message}`, 'warning');
+        const detail = err.message === 'Failed to fetch'
+          ? 'Failed to fetch (Pastikan URL menggunakan https:// dan server API online)'
+          : err.message;
+        showSisNotice(`Koneksi Gagal: ${detail}`, 'warning');
       }
     });
   }
@@ -578,7 +590,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       return true;
     } catch (err) {
-      alert('Gagal melakukan sinkronisasi ke SIS: ' + err.message);
+      const detail = err.message === 'Failed to fetch'
+        ? 'Failed to fetch (Koneksi ke endpoint API SIS terputus. Pastikan URL diawali https:// dan server API aktif).'
+        : err.message;
+      alert('Gagal melakukan sinkronisasi ke SIS: ' + detail);
       return false;
     } finally {
       activeSyncClient = null;

@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
 
+        $middleware->redirectGuestsTo(function (Request $request) {
+            return ($request->is('api/*') || $request->expectsJson()) ? null : '/admin/login';
+        });
+
         $middleware->alias([
             'emis.institution' => EnsureInstitutionMatches::class,
             'idempotency' => IdempotencyKey::class,

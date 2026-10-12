@@ -67,6 +67,21 @@ class EnsureInstitutionMatches
                 || (string) $requestedInstitutionId === (string) $institution->npsn
                 || (string) $requestedInstitutionId === (string) $institution->nsm;
 
+            if (! $matches && $reqId > 0) {
+                // Jika token ini diterbitkan langsung oleh instansi ini, dan ID internal EMIS
+                // yang terdeteksi belum terdaftar pada madrasah lain di database,
+                // sinkronkan emis_institution_id secara otomatis agar operator tidak terhambat.
+                $existingOwner = Institution::withoutGlobalScopes()
+                    ->where('emis_institution_id', $reqId)
+                    ->where('id', '!=', $institution->id)
+                    ->first();
+
+                if (! $existingOwner) {
+                    $institution->update(['emis_institution_id' => $reqId]);
+                    $matches = true;
+                }
+            }
+
             if (! $matches) {
                 activity('security')
                     ->causedBy($user)
@@ -75,7 +90,7 @@ class EnsureInstitutionMatches
 
                 return new JsonResponse([
                     'success' => false,
-                    'message' => 'Forbidden: institution_id pada request tidak cocok dengan madrasah pemilik token.',
+                    'message' => "Forbidden: institution_id pada request ({$reqId}) tidak cocok dengan madrasah pemilik token (ID: {$institution->id}, EMIS ID: {$institution->emis_institution_id}, NPSN: {$institution->npsn}).",
                     'error' => 'INSTITUTION_MISMATCH',
                 ], 403);
             }

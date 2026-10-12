@@ -310,6 +310,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         noticeBanner.textContent = 'Buka menu Kesiswaan di EMIS untuk mengaktifkan ekspor semua siswa.';
       }
 
+      const instIdStatus = document.getElementById('instIdStatus');
+      if (resp.snifferState?.institutionId && instIdStatus) {
+        instIdStatus.textContent = resp.snifferState.institutionId;
+        instIdStatus.className = 'status-val text-success';
+      }
+
       updateSyncButtonState();
     });
   } catch (err) {

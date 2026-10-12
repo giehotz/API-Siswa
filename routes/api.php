@@ -7,7 +7,34 @@ use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\SyncBatchController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', function () {
+    return response()->json([
+        'name' => config('app.name', 'SIS EMIS API'),
+        'version' => '1.0.0',
+        'status' => 'active',
+        'endpoints' => [
+            'v1' => url('/api/v1'),
+            'docs' => url('/docs/api'),
+        ],
+    ]);
+});
+
 Route::prefix('v1')->group(function () {
+    Route::get('/', function () {
+        return response()->json([
+            'name' => config('app.name', 'SIS EMIS API'),
+            'version' => 'v1',
+            'status' => 'active',
+            'message' => 'SIS EMIS API v1 siap digunakan.',
+            'endpoints' => [
+                'emis_status' => url('/api/v1/emis/status'),
+                'students' => url('/api/v1/students'),
+                'students_rombels' => url('/api/v1/students/rombels'),
+                'sync_batches' => url('/api/v1/sync-batches'),
+            ],
+        ]);
+    });
+
     // Autentikasi Admin Dashboard
     Route::post('/auth/login', [AuthController::class, 'login']);
 

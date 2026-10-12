@@ -62,7 +62,12 @@ class EnsureInstitutionMatches
 
         if ($requestedInstitutionId !== null) {
             $reqId = (int) $requestedInstitutionId;
-            if ($reqId !== (int) $institution->emis_institution_id && $reqId !== (int) $institution->id) {
+            $matches = $reqId === (int) $institution->emis_institution_id
+                || $reqId === (int) $institution->id
+                || (string) $requestedInstitutionId === (string) $institution->npsn
+                || (string) $requestedInstitutionId === (string) $institution->nsm;
+
+            if (! $matches) {
                 activity('security')
                     ->causedBy($user)
                     ->withProperties(['token_institution_id' => $institution->id, 'requested_institution_id' => $reqId])
